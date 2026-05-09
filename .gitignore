@@ -6,3 +6,4 @@ cdk.out/
 !jest.config.js
 .env
 .DS_Store
+.vscode
