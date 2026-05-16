@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "https://n21negag10.execute-api.us-east-1.amazonaws.com/development/"
+      "url": "https://82g1vt6ce6.execute-api.us-east-1.amazonaws.com/development/"
     }
   ],
   "paths": {
@@ -25,6 +25,42 @@
                   "items": {
                     "$ref": "#/components/schemas/Product"
                   }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a product",
+        "operationId": "createProduct",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProductRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Product created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductWithCount"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             }
@@ -89,19 +125,66 @@
         "properties": {
           "id": {
             "type": "string",
-            "example": "1"
+            "example": "7567ec4b-b10c-48c5-9345-fc73348a80a1"
           },
           "title": {
             "type": "string",
-            "example": "Vintage Camera"
+            "example": "Eco-Friendly Notebook"
           },
           "description": {
             "type": "string",
-            "example": "Classic film camera"
+            "example": "Eco-friendly notebook made from recycled paper, perfect for notes and sketches."
           },
           "price": {
             "type": "number",
-            "example": 120
+            "example": 15
+          }
+        }
+      },
+      "ProductWithCount": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "7567ec4b-b10c-48c5-9445-fc73c48a80a2"
+          },
+          "title": {
+            "type": "string",
+            "example": "Ceramic Coffee Mug"
+          },
+          "description": {
+            "type": "string",
+            "example": "Stylish ceramic mug, microwave and dishwasher safe, ideal for coffee or tea."
+          },
+          "price": {
+            "type": "number",
+            "example": 23
+          },
+          "count": {
+            "type": "integer",
+            "example": 8
+          }
+        }
+      },
+      "CreateProductRequest": {
+        "type": "object",
+        "required": ["title", "price"],
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "USB Flash Drive 32GB"
+          },
+          "description": {
+            "type": "string",
+            "example": "Reliable 32GB USB flash drive for fast and secure data storage."
+          },
+          "price": {
+            "type": "number",
+            "example": 15
+          },
+          "count": {
+            "type": "integer",
+            "example": 4
           }
         }
       },
