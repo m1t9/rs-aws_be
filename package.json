@@ -1,5 +1,5 @@
 {
-  "name": "product_service",
+  "name": "rs-aws_be",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -27,7 +27,10 @@
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1045.0",
+    "@aws-sdk/client-s3": "^3.1047.0",
     "@aws-sdk/lib-dynamodb": "^3.1045.0",
+    "@aws-sdk/s3-request-presigner": "^3.1047.0",
+    "csv-parser": "^3.2.1",
     "uuid": "^14.0.0"
   }
 }

@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, ScanCommand } from '@aws-sdk/lib-dynamodb';
-import updateHeaders from '../../../assets/nodejs/helpers/restriction';
+import updateHeaders from '../../../../assets/nodejs/helpers/restriction';
 
 const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
@@ -30,7 +30,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       body: JSON.stringify(data),
     };
   } catch (error) {
-    console.error('Error:', error);
+    console.log('Error:', error);
 
     return {
       statusCode: 500,

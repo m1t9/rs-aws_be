@@ -1,7 +1,7 @@
 import { PutCommand } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuidv4 } from 'uuid';
 import { products } from '../products/products';
-import { docClient } from '../client/client';
+import { docClient } from '../client/dynamo-client';
 
 async function fillTables() {
   const productsList = products.map((product) => ({

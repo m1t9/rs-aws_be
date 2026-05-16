@@ -1,4 +1,4 @@
-import allowedOrigins from "./origins";
+import allowedOrigins from './origins';
 
 type HeadersInput = {
   origin?: string;
