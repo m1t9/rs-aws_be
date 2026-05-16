@@ -5,7 +5,7 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    ignores: ['**/*.js', '**/*.d.ts', 'node_modules/', 'deploy/cdk.out/'],
+    ignores: ['**/*.js', '**/*.d.ts', 'node_modules/', '**/deploy/', '**/cdk.out/'],
   },
   {
     rules: {

@@ -6,7 +6,7 @@ import { Construct } from 'constructs';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 
-import allowedOrigins from '../../assets/nodejs/helpers/origins';
+import allowedOrigins from '../../../assets/nodejs/helpers/origins';
 
 export class DeployStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {

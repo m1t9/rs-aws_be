@@ -1,17 +1,17 @@
 {
   "openapi": "3.0.0",
   "info": {
-    "title": "Product Service API",
+    "title": "Product and Import Service API",
     "version": "1.0.0",
-    "description": "API for retrieving products"
+    "description": "API for retrieving products and generating import upload links"
   },
-  "servers": [
-    {
-      "url": "https://82g1vt6ce6.execute-api.us-east-1.amazonaws.com/development/"
-    }
-  ],
   "paths": {
     "/products": {
+      "servers": [
+        {
+          "url": "https://82g1vt6ce6.execute-api.us-east-1.amazonaws.com/development/"
+        }
+      ],
       "get": {
         "summary": "Get all products",
         "operationId": "getProductsList",
@@ -69,6 +69,11 @@
       }
     },
     "/products/{productId}": {
+      "servers": [
+        {
+          "url": "https://82g1vt6ce6.execute-api.us-east-1.amazonaws.com/development/"
+        }
+      ],
       "get": {
         "summary": "Get product by ID",
         "operationId": "getProductsById",
@@ -106,6 +111,60 @@
           },
           "404": {
             "description": "Product not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/import": {
+      "servers": [
+        {
+          "url": "https://zp6lrxx0ic.execute-api.us-east-1.amazonaws.com/development/"
+        }
+      ],
+      "get": {
+        "summary": "Get a signed upload URL for CSV import",
+        "operationId": "importProductsFile",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "File name to upload into the uploaded/ folder"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signed URL for uploading a CSV file",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request (missing name)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
             "content": {
               "application/json": {
                 "schema": {
