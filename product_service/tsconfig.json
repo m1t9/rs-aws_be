@@ -4,6 +4,13 @@
     "module": "commonjs",
     "esModuleInterop": true,
     "types": ["jest", "node"],
-    "strict": true
-  }
+    "strict": true,
+    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
+    "paths": {
+      "@aws-sdk/*": ["node_modules/@aws-sdk/*"],
+      "uuid": ["node_modules/uuid"]
+    }
+  },
+  "include": ["core/**/*"]
 }

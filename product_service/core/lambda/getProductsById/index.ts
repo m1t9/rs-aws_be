@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { GetCommand } from '@aws-sdk/lib-dynamodb';
-import updateHeaders from '../../../assets/nodejs/helpers/restriction';
-import { client } from '../../../assets/nodejs/client/client';
+import updateHeaders from '../../../../assets/nodejs/helpers/restriction';
+import { dynamoClient } from '../../../../assets/nodejs/client/dynamo-client';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   console.log('Incoming request: GET /products/{productId}', { pathParameters: event.pathParameters, headers: event.headers });
@@ -22,11 +22,11 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     console.log('Fetching product and stock data for productId:', productId);
 
     const [productResult, stockResult] = await Promise.all([
-      client.send(new GetCommand({
+      dynamoClient.send(new GetCommand({
         TableName: process.env.PRODUCTS_TABLE_NAME,
         Key: { id: productId },
       })),
-      client.send(new GetCommand({
+      dynamoClient.send(new GetCommand({
         TableName: process.env.STOCKS_TABLE_NAME,
         Key: { product_id: productId },
       })),
@@ -52,7 +52,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       body: JSON.stringify(product),
     };
   } catch (error) {
-    console.error('Error:', error);
+    console.log('Error:', error);
 
     return {
       statusCode: 500,

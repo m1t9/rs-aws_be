@@ -2,8 +2,8 @@ import { APIGatewayProxyEvent } from 'aws-lambda';
 import { handler } from './index';
 
 const mockSend = jest.fn();
-jest.mock('../../../assets/nodejs/client/client', () => ({
-  client: { send: (...args: unknown[]) => mockSend(...args) },
+jest.mock('../../../../assets/nodejs/client/dynamo-client', () => ({
+  dynamoClient: { send: (...args: unknown[]) => mockSend(...args) },
 }));
 
 jest.mock('uuid', () => ({
