@@ -1,0 +1,21 @@
+{
+  "name": "authorization-service-deploy",
+  "version": "0.1.0",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "watch": "tsc -w",
+    "cdk": "cdk"
+  },
+  "devDependencies": {
+    "@types/node": "^24.12.4",
+    "aws-cdk": "2.1120.0",
+    "esbuild": "^0.28.0",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.9.3"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.251.0",
+    "constructs": "^10.5.0",
+    "dotenv": "^17.4.2"
+  }
+}
