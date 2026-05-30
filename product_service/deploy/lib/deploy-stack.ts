@@ -1,10 +1,16 @@
 import * as path from 'path';
-import * as apigateway from "aws-cdk-lib/aws-apigateway";
+import 'dotenv/config';
 import * as cdk from 'aws-cdk-lib/core';
-import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
-import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
-import { Runtime } from 'aws-cdk-lib/aws-lambda';
+import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
+import { createGetProductsListFunction } from './functions/get-products-list';
+import { createGetProductByIdFunction } from './functions/get-product-by-id';
+import { createCreateProductFunction } from './functions/create-product';
+import { createCatalogBatchProcessFunction } from './functions/catalog-batch-process';
+import { createProductsApi } from './api/products-api';
+import { createProductTables } from './tables/product-tables';
+import { createProductTopic } from './topics/create-product-topic';
 
 import allowedOrigins from '../../../assets/nodejs/helpers/origins';
 
@@ -13,65 +19,41 @@ export class DeployStack extends cdk.Stack {
     super(scope, id, props);
 
     const projectRoot = path.resolve(__dirname, '../..');
+    const { productsTable, stocksTable } = createProductTables(this);
 
-    const productsTable = new dynamodb.Table(this, 'ProductsTable', {
-      tableName: 'products',
-      partitionKey: {
-        name: 'id',
-        type: dynamodb.AttributeType.STRING
-      },
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    const catalogItemsQueue = new sqs.Queue(this, 'CatalogItemsQueue', {
+      queueName: 'catalogItemsQueue',
     });
 
-    const stocksTable = new dynamodb.Table(this, 'StocksTable', {
-      tableName: 'stocks',
-      partitionKey: {
-        name: 'product_id',
-        type: dynamodb.AttributeType.STRING
-      },
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-    });
+    const productTopic = createProductTopic(this);
 
-    const getProductsListFunction = new NodejsFunction(this, 'get-products-list', {
-      runtime: Runtime.NODEJS_20_X,
-      memorySize: 1024,
-      timeout: cdk.Duration.seconds(5),
-      handler: 'handler',
-      entry: path.resolve(__dirname, '../../core/lambda/getProductsList/index.ts'),
+    const getProductsListFunction = createGetProductsListFunction(this, {
       projectRoot,
-      environment: {
-        PRODUCTS_TABLE_NAME: productsTable.tableName,
-        STOCKS_TABLE_NAME: stocksTable.tableName,
-        REGION: this.region,
-      },
+      productsTableName: productsTable.tableName,
+      stocksTableName: stocksTable.tableName,
+      region: this.region,
     });
 
-    const getProductByIdFunction = new NodejsFunction(this, 'get-product-by-id', {
-      runtime: Runtime.NODEJS_20_X,
-      memorySize: 1024,
-      timeout: cdk.Duration.seconds(5),
-      handler: 'handler',
-      entry: path.resolve(__dirname, '../../core/lambda/getProductsById/index.ts'),
+    const getProductByIdFunction = createGetProductByIdFunction(this, {
       projectRoot,
-      environment: {
-        PRODUCTS_TABLE_NAME: productsTable.tableName,
-        STOCKS_TABLE_NAME: stocksTable.tableName,
-        REGION: this.region,
-      },
+      productsTableName: productsTable.tableName,
+      stocksTableName: stocksTable.tableName,
+      region: this.region,
     });
 
-    const createProductFunction = new NodejsFunction(this, 'create-product', {
-      runtime: Runtime.NODEJS_20_X,
-      memorySize: 1024,
-      timeout: cdk.Duration.seconds(5),
-      handler: 'handler',
-      entry: path.resolve(__dirname, '../../core/lambda/createProduct/index.ts'),
+    const createProductFunction = createCreateProductFunction(this, {
       projectRoot,
-      environment: {
-        PRODUCTS_TABLE_NAME: productsTable.tableName,
-        STOCKS_TABLE_NAME: stocksTable.tableName,
-        REGION: this.region,
-      },
+      productsTableName: productsTable.tableName,
+      stocksTableName: stocksTable.tableName,
+      region: this.region,
+    });
+
+    const catalogBatchProcessFunction = createCatalogBatchProcessFunction(this, {
+      projectRoot,
+      productsTableName: productsTable.tableName,
+      stocksTableName: stocksTable.tableName,
+      createProductTopicArn: productTopic.topicArn,
+      region: this.region,
     });
 
     productsTable.grantReadData(getProductsListFunction);
@@ -83,32 +65,32 @@ export class DeployStack extends cdk.Stack {
     productsTable.grantWriteData(createProductFunction);
     stocksTable.grantWriteData(createProductFunction);
 
-    const api = new apigateway.RestApi(this, "products-api", {
-      restApiName: "Products Service",
-      description: "This API serves the Products Lambda functions.",
-      deployOptions: {
-        stageName: 'development',
-      },
-      defaultCorsPreflightOptions: {
-        allowOrigins: allowedOrigins,
-        allowMethods: ['GET', 'POST', 'OPTIONS']
-      },
+    productsTable.grantWriteData(catalogBatchProcessFunction);
+    stocksTable.grantWriteData(catalogBatchProcessFunction);
+    catalogItemsQueue.grantConsumeMessages(catalogBatchProcessFunction);
+    productTopic.grantPublish(catalogBatchProcessFunction);
+
+    catalogBatchProcessFunction.addEventSource(new SqsEventSource(catalogItemsQueue, {
+      batchSize: 5,
+    }));
+
+    const api = createProductsApi(this, {
+      allowOrigins: allowedOrigins,
+      getProductsListFunction,
+      getProductByIdFunction,
+      createProductFunction,
     });
-
-    const getProductsListIntegration = new apigateway.LambdaIntegration(getProductsListFunction);
-    const getProductByIdIntegration = new apigateway.LambdaIntegration(getProductByIdFunction);
-    const createProductIntegration = new apigateway.LambdaIntegration(createProductFunction);
-
-    const products = api.root.addResource('products');
-    products.addMethod('GET', getProductsListIntegration);
-
-    const product = products.addResource('{productId}');
-    product.addMethod('GET', getProductByIdIntegration);
-
-    products.addMethod('POST', createProductIntegration);
 
     new cdk.CfnOutput(this, 'ProductsApiUrl', {
       value: api.url,
+    });
+
+    new cdk.CfnOutput(this, 'CatalogItemsQueueName', {
+      value: catalogItemsQueue.queueName,
+    });
+
+    new cdk.CfnOutput(this, 'CreateProductTopicArn', {
+      value: productTopic.topicArn,
     });
   }
 }

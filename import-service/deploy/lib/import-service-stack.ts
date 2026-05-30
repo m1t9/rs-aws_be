@@ -3,6 +3,7 @@ import * as cdk from 'aws-cdk-lib/core';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as s3Notifications from 'aws-cdk-lib/aws-s3-notifications';
+import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
@@ -12,6 +13,13 @@ export class ImportServiceStack extends cdk.Stack {
     super(scope, id, props);
 
     const projectRoot = path.resolve(__dirname, '../..');
+    const catalogItemsQueueName = 'catalogItemsQueue';
+
+    const catalogItemsQueue = sqs.Queue.fromQueueArn(
+      this,
+      'CatalogItemsQueue',
+      `arn:aws:sqs:${this.region}:${this.account}:${catalogItemsQueueName}`,
+    );
 
     const bucket = new s3.Bucket(this, 'ImportBucket', {
       bucketName: `import-bucket-${this.account}-${this.region}`,
@@ -50,11 +58,13 @@ export class ImportServiceStack extends cdk.Stack {
       environment: {
         REGION: this.region,
         S3_BUCKET_NAME: bucket.bucketName,
+        CATALOG_ITEMS_QUEUE_URL: `https://sqs.${this.region}.${cdk.Aws.URL_SUFFIX}/${this.account}/${catalogItemsQueueName}`,
       },
     });
 
     bucket.grantReadWrite(importProductsFileFn);
     bucket.grantReadWrite(importFileParserFn);
+    catalogItemsQueue.grantSendMessages(importFileParserFn);
 
     bucket.addEventNotification(
       s3.EventType.OBJECT_CREATED,
