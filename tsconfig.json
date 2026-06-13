@@ -9,6 +9,7 @@
   "include": [
     "product_service/core/**/*",
     "import-service/core/**/*",
+    "authorization-service/core/**/*",
     "assets/**/*"
   ]
 }

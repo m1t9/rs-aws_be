@@ -4,6 +4,7 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as s3Notifications from 'aws-cdk-lib/aws-s3-notifications';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
@@ -81,13 +82,46 @@ export class ImportServiceStack extends cdk.Stack {
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
         allowMethods: apigateway.Cors.ALL_METHODS,
+        allowHeaders: ['Content-Type', 'Authorization'],
       },
+    });
+
+    api.addGatewayResponse('UnauthorizedGatewayResponse', {
+      type: apigateway.ResponseType.UNAUTHORIZED,
+      responseHeaders: {
+        'Access-Control-Allow-Origin': "'*'",
+        'Access-Control-Allow-Headers': "'Content-Type,Authorization'",
+      },
+    });
+
+    api.addGatewayResponse('ForbiddenGatewayResponse', {
+      type: apigateway.ResponseType.ACCESS_DENIED,
+      responseHeaders: {
+        'Access-Control-Allow-Origin': "'*'",
+        'Access-Control-Allow-Headers': "'Content-Type,Authorization'",
+      },
+    });
+
+    const basicAuthorizerArn = cdk.Fn.importValue('BasicAuthorizerArn');
+
+    const basicAuthorizerFn = lambda.Function.fromFunctionArn(
+      this,
+      'BasicAuthorizer',
+      basicAuthorizerArn,
+    );
+
+    const authorizer = new apigateway.TokenAuthorizer(this, 'ImportAuthorizer', {
+      handler: basicAuthorizerFn,
+      identitySource: 'method.request.header.Authorization',
     });
 
     const importProductsFileIntegration = new apigateway.LambdaIntegration(importProductsFileFn);
 
     const importProducts = api.root.addResource('import');
-    importProducts.addMethod('GET', importProductsFileIntegration);
+    importProducts.addMethod('GET', importProductsFileIntegration, {
+      authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
 
     new cdk.CfnOutput(this, 'ImportApiUrl', {
       value: api.url,
